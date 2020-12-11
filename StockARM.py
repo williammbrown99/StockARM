@@ -40,7 +40,7 @@ while running:
     #Columns Avalible: 'Open', 'High', 'Low', 'Close', 'Volume', 'Dividends', 'Stock Splits'
     #Index = Date
 
-    #Creating Categorical DataFrame
+    #Creating Categorical DataFrame/ Generating Features
     cat_df = pd.DataFrame()
     #Gain Percentage Calculation
     #Gain % = ((Close-Open)/Close) * 100
@@ -64,6 +64,38 @@ while running:
             grade = 'F'
         buyGrade.append(grade)
     cat_df['Buy Grade'] = buyGrade
+
+    #Switch Calculation: Finding days when Gain % moves from - to +
+    switches = []
+    #First day = False
+    switches.append(False)
+    for i in range(1, len(gainPercentage)):
+        if gainPercentage[i-1] < 0 and gainPercentage[i] > 0:
+            switch = True
+        else:
+            switch = False
+        switches.append(switch)
+
+    #3-Day Monotonic Increase Calculation
+    monotonics = []
+    for i in range(0, len(gainPercentage)-3):
+        if gainPercentage[i] > 0 and gainPercentage[i+1] > 0 and gainPercentage[i+2]:
+            monotonic = True
+        else:
+            monotonic = False
+        monotonics.append(monotonic)
+    for j in range(3):
+        monotonics.append(False)
+
+    #Good Buy Calculation
+    goodbuys = []
+    for i in range(len(switches)):
+        if switches[i] == True and monotonics[i] == True:
+            goodBuy = 'Good Buy'
+        else:
+            goodBuy = 'Not Good Buy'
+        goodbuys.append(goodBuy)
+    cat_df['Good Buy'] = goodbuys
 
     #Month Calculation
     months = []
@@ -99,15 +131,18 @@ while running:
     print(cat_df)
 
     #Plotting Histograms of Features
-    fig, axs = plt.subplots(2, tight_layout=True, figsize=(10,10))
+    fig, axs = plt.subplots(3, tight_layout=True, figsize=(10,10))
     #Buy Grade
     axs[0].hist(cat_df['Buy Grade'], bins=4)
     axs[0].set_title('Buy Grade')
 
-    #Season
+    #Month
     axs[1].hist(cat_df['Month'], bins=12, color='green')
     axs[1].set_title('Month')
 
+    #Good Buy
+    axs[2].hist(cat_df['Good Buy'], bins=2, color='red')
+    axs[2].set_title('Good Buy')
     plt.show()
 
     #Creating Transactional DataFrame
@@ -118,6 +153,8 @@ while running:
     for k in ['January', 'February', 'March', 'April', 'May', 'June',\
               'July', 'August', 'September', 'October', 'November', 'December']:
         trans_df['{}'.format(k)] = transCalc(cat_df['Month'], k)
+    for l in ['Good Buy', 'Not Good Buy']:
+        trans_df['{}'.format(l)] = transCalc(cat_df['Good Buy'], l)
     
     print(trans_df)
 
